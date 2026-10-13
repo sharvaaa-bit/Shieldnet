@@ -356,10 +356,41 @@ MSG_HELD = [
  ("Please call me when you are free, urgent but not an emergency.", 0),
 ]
 
+MSG_HELD2 = [  # third set, written AFTER the rules were frozen; reported exactly as scored, never patched
+ ("Your DHL parcel is on hold: address incomplete. Update details and pay 1.5 USD at http://dhl-redeliver.top/track", 1),
+ ("Hi dear, I saw your profile. I'm a doctor in UK, let's chat on telegram @lily_uk88, I want to send you a gift", 1),
+ ("Your electricity bill is overdue. Pay Rs 1,250 now via this link or power will be cut: bit.ly/ebill-pay-9", 1),
+ ("Alert: Your Netflix payment failed. Update your card at https://netflix-account-help.xyz/login to avoid suspension", 1),
+ ("You are selected for a work from home job, earn Rs 3000 per day. Send your Aadhaar and PAN to confirm registration", 1),
+ ("SBI YONO: your account is locked, tap here to unlock http://yono-sbi-unlock.click and enter your net banking password", 1),
+ ("Congratulations winner! You got a free iPhone 15. Pay Rs 99 shipping fee to claim", 1),
+ ("Please install the attached SecureBank.apk to complete your KYC update", 1),
+ ("Dear customer, your credit card reward points of Rs 8,540 will expire today. Redeem now at http://hdfc-rewardz.buzz", 1),
+ ("Send me 20000 on this UPI right now, I'm in an accident, don't tell anyone, will return tonight", 1),
+ ("Official notice: your GST registration will be cancelled. Pay penalty immediately at 45.33.21.8/gst/pay", 1),
+ ("Hello, I'm calling from Microsoft support. Your computer has a virus. Download AnyDesk and give us the 9 digit code", 1),
+ ("Earn 40% returns weekly with our crypto signals. Guaranteed. Message +44 7700 900123 on whatsapp", 1),
+ ("Your account has been compromised. Verify your identity within 2 hours by entering your card number and CVV at secure-axisbank-verify.xyz", 1),
+ ("Your Zomato order is arriving in 10 mins. Delivery partner: Ramesh.", 0),
+ ("Your Airtel recharge of Rs 299 is successful. Validity 28 days. Visit https://www.airtel.in for more.", 0),
+ ("OTP 551203 is for your Flipkart login. Do not share this OTP with anyone.", 0),
+ ("Reminder: your dentist appointment is tomorrow at 11am. Reply C to confirm.", 0),
+ ("Hi team, urgent: please review the Q3 report before the 4pm meeting.", 0),
+ ("Your SBI statement for September is ready. Login to the official app to view.", 0),
+ ("Congratulations on your promotion! Dinner is on me.", 0),
+ ("UPI: Rs 450.00 sent to Anita via a/c XX9981 on 12-10. Ref 2845123.", 0),
+ ("Payment of Rs 1,499 received for your Amazon order. Track it at https://www.amazon.in/gp/your-orders", 0),
+ ("Mom: Send me the photos from the trip when you get time.", 0),
+ ("Your electricity bill of Rs 1,120 is due on 18 Oct. Pay at https://www.bescom.karnataka.gov.in", 0),
+ ("Heads up, the bank will be closed on Saturday for the festival. Plan your cash needs.", 0),
+ ("The package will be delivered tomorrow. Please keep Rs 350 ready for cash on delivery.", 0),
+ ("Hey, can you transfer me the Rs 500 for lunch when you're free? Thanks!", 0),
+]
+
 
 def eval_messages():
     out = {}
-    for name, ds in (("dev", MSG_DEV), ("held_out", MSG_HELD)):
+    for name, ds in (("dev", MSG_DEV), ("held_out", MSG_HELD), ("fresh_set_3", MSG_HELD2)):
         tp = fp = tn = fn = 0
         wrong = []
         for t, y in ds:
@@ -1001,9 +1032,39 @@ class H(BaseHTTPRequestHandler):
         except Exception as e: return self._send(500, {"error": str(e)})
 
 
+def selftest():
+    """python server.py --selftest : proves the claims (privacy, no leakage, blocking behaviour, API round-trip)."""
+    global ENG
+    ENG = Engine(); ENG.build(); res = []
+    def check(name, ok): res.append((name, bool(ok))); print(("PASS  " if ok else "FAIL  ") + name, flush=True)
+    check("features use the past only (re-featurised from a fresh store fed only earlier txns)", ENG.no_leak_test)
+    check("label/pattern/decoy can never be features", not (FORBIDDEN & set(FEATS)))
+    n0, c0 = len(MEM.items), MEM.db.execute("SELECT COUNT(*) FROM spam_memory").fetchone()[0]
+    for t in ["Hey are we still on for dinner at 8 tomorrow?", "Your OTP is 4821. Do not share it with anyone.", "Lunch at 1?"]: shield(t)
+    check("normal messages leave NOTHING in memory or database", len(MEM.items) == n0 and MEM.db.execute("SELECT COUNT(*) FROM spam_memory").fetchone()[0] == c0)
+    r = shield("URGENT: Your SBI account will be blocked. Verify KYC at http://sbi-kyc-update.xyz/login and share OTP now")
+    check("phishing message is blocked and only a masked fingerprint is kept", r["action"] == "BLOCK" and r["stored_in_memory"] and "sbi-kyc-update.xyz" in MEM.items[-1]["redacted"] and "xyz/login" not in MEM.items[-1]["redacted"])
+    r2 = shield("urgent!! your SBI a/c will be blocked. verify KYC at http://sbi-kyc-update.xyz/login and share OTP now 99")
+    check("reworded copy of known spam is recognised from memory", r2["action"] == "BLOCK")
+    check("zero-width obfuscation does not hide a scam", shield("Cl\u200baim your pr\u200bize: pay Rs 500 fee at http://win-big.top now")["action"] in ("BLOCK", "WARN"))
+    for nm, want in (("normal", ("ALLOW",)), ("salary", ("ALLOW", "VERIFY")), ("traveller", ("ALLOW", "VERIFY")), ("structuring", ("BLOCK", "HOLD")), ("circular", ("BLOCK", "HOLD")), ("ring", ("BLOCK", "HOLD")), ("takeover", ("BLOCK", "HOLD")), ("passthrough", ("BLOCK", "HOLD"))):
+        out = ENG.scenario(nm); check("scenario %-11s -> %s" % (nm, out["results"][-1]["action"]), out["results"][-1]["action"] in want)
+    check("a ring of alerts merges into few cases", max(c["alerts_merged"] for c in ENG.cases.values()) >= 5)
+    check("single weak signal never blocks (guard)", guard("BLOCK", .1, .1, .1) == "VERIFY" and guard("BLOCK", .95, .0, .0) == "BLOCK")
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), H); threading.Thread(target=srv.serve_forever, daemon=True).start()
+    import urllib.request
+    def post(path, o): return json.loads(urllib.request.urlopen(urllib.request.Request("http://127.0.0.1:%d%s" % (srv.server_port, path), json.dumps(o).encode(), {"Content-Type": "application/json"}), timeout=20).read())
+    check("HTTP API round-trip /api/message", post("/api/message", {"text": "Congratulations! You won a lottery. Pay Rs 4999 fee to claim your prize"})["action"] in ("BLOCK", "WARN"))
+    P = ENG.acc["AC0001"]
+    check("HTTP API round-trip /api/score (usual device, city, payee -> Allow)", post("/api/score", {"s": "AC0001", "r": P["pay"][0], "amt": 500, "dev": P["dev"][0], "city": P["city"]})["action"] == "ALLOW")
+    check("same account, unknown device + new city -> not silently allowed", post("/api/score", {"s": "AC0001", "r": "AC0002", "amt": 500, "dev": "UNKNOWN", "city": "Kochi"})["action"] != "ALLOW")
+    bad = [n for n, ok in res if not ok]; print("\n%d/%d checks passed" % (len(res) - len(bad), len(res))); sys.exit(1 if bad else 0)
+
+
 def main():
     global ENG
     ENG = Engine()
+    if "--selftest" in sys.argv: selftest(); return
     if "--eval" in sys.argv:
         ENG.build(); print(json.dumps(ENG.report, indent=1)); return
     port = int(os.environ.get("PORT", 8000))
