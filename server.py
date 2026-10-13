@@ -1032,6 +1032,105 @@ class H(BaseHTTPRequestHandler):
         except Exception as e: return self._send(500, {"error": str(e)})
 
 
+
+# ====================================================================================================
+# PART 4 - v3 ADDITIVE LAYER  (wraps the handler above; nothing above this line was modified)
+#   /api/telemetry  live service health      /api/whatif  threshold trade-off lab      /api/batch  bulk message scan
+#   + per-client rate limiting, security headers, request latency stats
+# ====================================================================================================
+class Telemetry:
+    LIMIT, WINDOW = 300, 60.0          # requests per client per minute
+    def __init__(self):
+        self.t0 = time.time(); self.n = 0; self.limited = 0; self.routes = defaultdict(int)
+        self.lat = deque(maxlen=800); self.hits = defaultdict(deque); self.lock = threading.Lock()
+    def allow(self, ip):
+        now = time.time()
+        with self.lock:
+            q = self.hits[ip]
+            while q and now - q[0] > self.WINDOW: q.popleft()
+            if len(q) >= self.LIMIT: self.limited += 1; return False
+            q.append(now)
+            if len(self.hits) > 5000:  # bound memory
+                for k in [k for k, v in self.hits.items() if not v or now - v[-1] > self.WINDOW][:2500]: self.hits.pop(k, None)
+        return True
+    def record(self, path, dt):
+        with self.lock:
+            self.n += 1; self.routes[path if path.startswith("/api/") else "static"] += 1; self.lat.append(dt * 1000)
+    def report(self):
+        with self.lock:
+            lat = sorted(self.lat); pc = lambda q: round(lat[min(len(lat) - 1, int(q * len(lat)))], 2) if lat else 0
+            return dict(uptime_s=round(time.time() - self.t0), requests=self.n, rate_limited=self.limited, latency_ms=dict(p50=pc(.5), p95=pc(.95), max=round(lat[-1], 2) if lat else 0),
+                        routes=dict(sorted(self.routes.items(), key=lambda kv: -kv[1])[:8]), engine=dict(ready=ENG.ready, phase=ENG.phase, replay_rows=len(getattr(ENG, "stream", []) or [])),
+                        message_counters=dict(MEM.counters), limit_per_min=self.LIMIT)
+
+TELEM = Telemetry()
+
+
+def whatif(a, b, c):
+    """Replay the held-out stream under any three display-scale cut-offs and price the result with the same cost model used for tuning."""
+    S = ENG.stream; acts = defaultdict(int); fr = lg = caught = ver = missed = lfr = 0; cost = 0.0
+    for x in S:
+        r = x["risk"]; act = "ALLOW" if r < a else "VERIFY" if r < b else "HOLD" if r < c else "BLOCK"; acts[act] += 1
+        if x["truth"]:
+            fr += 1
+            if act in ("HOLD", "BLOCK"): caught += 1
+            elif act == "VERIFY": ver += 1; cost += COST["fn_verified"]
+            else: missed += 1; cost += COST["fn"]
+        else:
+            lg += 1
+            if act in ("HOLD", "BLOCK"): lfr += 1; cost += COST["hold_friction"]
+            elif act == "VERIFY": lfr += 1; cost += COST["verify_friction"]
+    n = max(1, len(S))
+    return dict(n=len(S), actions={k: acts.get(k, 0) for k in ("ALLOW", "VERIFY", "HOLD", "BLOCK")}, fraud=fr, legit=lg, fraud_blocked=caught, fraud_challenged=ver, fraud_missed=missed,
+                fraud_stopped_pct=round(100 * caught / max(1, fr), 1), legit_friction_pct=round(100 * lfr / max(1, lg), 2), cost_per_1k=round(cost / n * 1000, 1), cutoffs=[a, b, c],
+                basis="held-out replay stream, display-scale risk (tuned defaults sit at .30/.60/.85); the single-signal guard is not re-applied")
+
+
+def _fl(q, k, d):
+    try: return float(q.get(k, [d])[0])
+    except (ValueError, TypeError): return d
+
+
+_orig_get, _orig_post, _orig_end = H.do_GET, H.do_POST, H.end_headers
+
+
+def _v3_get(self):
+    t0 = perf_counter(); p = urllib.parse.urlparse(self.path).path
+    try:
+        if not TELEM.allow(self.client_address[0]): return self._send(429, dict(error="rate limit exceeded", retry_after_s=int(Telemetry.WINDOW)))
+        if p == "/api/telemetry": return self._send(200, TELEM.report())
+        if p == "/api/whatif":
+            if not ENG.ready: return self._send(503, dict(ready=False, phase=ENG.phase))
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            a = max(.01, min(.97, _fl(q, "a", .30))); b = max(a, min(.98, _fl(q, "b", .60))); c = max(b, min(.99, _fl(q, "c", .85)))
+            return self._send(200, dict(current=whatif(a, b, c), baseline=whatif(.30, .60, .85)))
+        return _orig_get(self)
+    finally: TELEM.record(p, perf_counter() - t0)
+
+
+def _v3_post(self):
+    t0 = perf_counter(); p = urllib.parse.urlparse(self.path).path
+    try:
+        if not TELEM.allow(self.client_address[0]): return self._send(429, dict(error="rate limit exceeded", retry_after_s=int(Telemetry.WINDOW)))
+        if p == "/api/batch":
+            texts = (self.body().get("texts") or [])[:50]; out = []; cnt = defaultdict(int)
+            for t in texts:
+                r = shield(str(t)[:2000], store=False); cnt[r["verdict"]] += 1
+                out.append(dict(verdict=r["verdict"], action=r["action"], score=r["score"], top=(r["signals"][0]["text"][:120] if r["signals"] else ""), latency_ms=r["latency_ms"]))
+            return self._send(200, dict(count=len(out), summary=dict(cnt), results=out, privacy="analysed in RAM, nothing stored"))
+        return _orig_post(self)
+    finally: TELEM.record(p, perf_counter() - t0)
+
+
+def _v3_end(self):
+    self.send_header("X-Content-Type-Options", "nosniff"); self.send_header("Referrer-Policy", "no-referrer")
+    if self.path.startswith("/api/"): self.send_header("Cache-Control", "no-store")
+    _orig_end(self)
+
+
+H.do_GET, H.do_POST, H.end_headers = _v3_get, _v3_post, _v3_end
+
+
 def selftest():
     """python server.py --selftest : proves the claims (privacy, no leakage, blocking behaviour, API round-trip)."""
     global ENG
