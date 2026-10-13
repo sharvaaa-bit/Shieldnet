@@ -447,13 +447,14 @@ $('bAnalyze').onclick=analyze;$('bReport').onclick=report;$('msg').addEventListe
 
 /* ---------------------------------- boot ---------------------------------- */
 async function boot(){
+  if(SNAPSHOT){strip(SNAPSHOT);METRICS=SNAPSHOT;DEMOM=true}      // numbers are never empty: show the reference run first
   if(API){try{const h=await call('/api/health');LIVE=!!h.ok}catch(e){LIVE=false}}
   const m=$('mode');
-  if(!LIVE){m.className='pill demo';m.innerHTML='<b>●</b> DEMO ENGINE · in-browser';DEMOM=true;METRICS=SNAPSHOT;if(SNAPSHOT)strip(SNAPSHOT);$('feedsub').textContent='simulated stream';refreshPrivacy();refreshCases();return}
-  m.innerHTML='<b>●</b> LIVE ENGINE · '+(API||location.host);
-  const wait=async()=>{let h;try{h=await call('/api/health')}catch(e){setTimeout(wait,2000);return}
-    if(!h.ready){m.innerHTML='<b>●</b> LIVE · engine training: '+esc(h.phase);setTimeout(wait,1500);return}
-    m.innerHTML='<b>●</b> LIVE ENGINE · '+(API||location.host);METRICS=await call('/api/metrics');strip(METRICS);refreshPrivacy();refreshCases()};
+  if(!LIVE){m.className='pill demo';m.innerHTML='<b>●</b> DEMO ENGINE · in-browser';$('feedsub').textContent='simulated stream';refreshPrivacy();refreshCases();return}
+  const wait=async()=>{let h;try{h=await call('/api/health')}catch(e){m.innerHTML='<b>●</b> LIVE · waking up the server…';setTimeout(wait,2500);return}
+    if(!h.ready){m.innerHTML='<b>●</b> LIVE · engine training: '+esc(h.phase)+' (showing reference metrics)';setTimeout(wait,1500);return}
+    try{METRICS=await call('/api/metrics');DEMOM=false;strip(METRICS)}catch(e){setTimeout(wait,2500);return}
+    m.innerHTML='<b>●</b> LIVE ENGINE · '+(API||location.host);refreshPrivacy();refreshCases()};
   wait();refreshPrivacy()}
 boot();
 setInterval(()=>{if(LIVE)refreshPrivacy()},15000);
