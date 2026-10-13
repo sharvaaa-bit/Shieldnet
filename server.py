@@ -1007,9 +1007,14 @@ def main():
     if "--eval" in sys.argv:
         ENG.build(); print(json.dumps(ENG.report, indent=1)); return
     port = int(os.environ.get("PORT", 8000))
-    threading.Thread(target=ENG.build, daemon=True).start()
-    print("ShieldNet on http://0.0.0.0:%d  (engine trains in the background; message shield is live immediately)" % port)
-    ThreadingHTTPServer(("0.0.0.0", port), H).serve_forever()
+    httpd = ThreadingHTTPServer(("0.0.0.0", port), H)   # bind the port FIRST so hosts (Render) see it open immediately
+    print("ShieldNet listening on 0.0.0.0:%d  (engine trains in the background; message shield is live immediately)" % port, flush=True)
+    def _train():
+        try: ENG.build(); print("engine ready", flush=True)
+        except Exception as e: ENG.phase = "failed: %s" % e; print("engine build failed:", e, flush=True)
+    sys.setswitchinterval(0.002)  # keep the web thread responsive while training runs
+    threading.Thread(target=_train, daemon=True).start()
+    httpd.serve_forever()
 
 
 if __name__ == "__main__":
