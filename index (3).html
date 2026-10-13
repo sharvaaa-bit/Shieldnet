@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ShieldNet — Pre-Network Fraud &amp; Spam Defence</title>
+<meta name="description" content="Stops spam, phishing and fraudulent payments before they reach the UPI / bank network or the user's device.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05070d;--glass:rgba(9,15,29,.66);--line:rgba(120,190,255,.16);--tx:#e8f1ff;--mut:#8aa0bd;--cy:#38e8ff;--gr:#3dff9a;--am:#ffc24a;--or:#ff8a3d;--rd:#ff3d5a;--pu:#9b7bff;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Space Grotesk',system-ui,sans-serif;overflow:hidden}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+.vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 35%,rgba(5,7,13,.78) 100%)}
+header{position:fixed;top:0;left:0;right:0;height:56px;display:flex;align-items:center;gap:14px;padding:0 18px;z-index:5;background:linear-gradient(180deg,rgba(5,7,13,.9),transparent)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.04em}
+.logo i{width:26px;height:26px;border-radius:8px;background:conic-gradient(from 210deg,var(--cy),var(--pu),var(--gr),var(--cy));box-shadow:0 0 18px rgba(56,232,255,.6);display:inline-block}
+.logo small{color:var(--mut);font-weight:400;letter-spacing:.02em;margin-left:4px}
+.sp{flex:1}
+.pill{font:600 11px 'JetBrains Mono',monospace;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--glass);backdrop-filter:blur(10px);color:var(--mut);cursor:default;white-space:nowrap}
+.pill b{color:var(--gr)}.pill.demo b{color:var(--am)}
+button{font:inherit;color:var(--tx);cursor:pointer}
+.btn{border:1px solid var(--line);background:rgba(20,34,62,.7);padding:8px 12px;border-radius:10px;font-size:13px;transition:.15s}
+.btn:hover{border-color:var(--cy);box-shadow:0 0 14px rgba(56,232,255,.25)}
+.btn.pri{background:linear-gradient(135deg,#0aa9c7,#3b6dff);border:0;font-weight:700}
+.btn.sm{padding:5px 9px;font-size:12px;border-radius:8px}
+main{position:fixed;top:56px;bottom:84px;left:0;right:0;display:flex;justify-content:space-between;gap:16px;padding:6px 16px;z-index:3;pointer-events:none}
+.col{width:min(390px,32vw);min-width:320px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;pointer-events:auto;scrollbar-width:thin;scrollbar-color:#2a3d63 transparent;padding-right:2px}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(14px);padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.card h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cy);display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.card h2 span{color:var(--mut);letter-spacing:.02em;text-transform:none;font-weight:400;font-size:12px}
+textarea{width:100%;height:92px;resize:vertical;background:rgba(3,8,18,.7);border:1px solid var(--line);border-radius:10px;color:var(--tx);padding:10px;font:13px/1.4 'JetBrains Mono',monospace;outline:0}
+textarea:focus{border-color:var(--cy)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{font-size:11px;padding:4px 8px;border-radius:99px;border:1px solid var(--line);background:rgba(20,34,62,.5);color:var(--mut);cursor:pointer}
+.chip:hover{color:var(--tx);border-color:var(--cy)}
+.row{display:flex;gap:8px;align-items:center}
+.res{margin-top:10px;display:none}
+.gauge{display:flex;gap:12px;align-items:center}
+.ring{width:74px;height:74px;position:relative;flex:none}
+.ring svg{transform:rotate(-90deg)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font:700 20px 'JetBrains Mono',monospace}
+.verdict{font-size:20px;font-weight:700}
+.sub{color:var(--mut);font-size:12px}
+ul.sig{list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:5px}
+ul.sig li{font-size:12px;display:flex;gap:8px;line-height:1.35}
+ul.sig em{font:600 10px 'JetBrains Mono',monospace;font-style:normal;padding:2px 6px;border-radius:6px;background:rgba(56,232,255,.12);color:var(--cy);flex:none;height:fit-content;margin-top:1px}
+ul.sig em.url{background:rgba(255,138,61,.14);color:var(--or)}ul.sig em.hidden{background:rgba(255,61,90,.14);color:var(--rd)}ul.sig em.memory{background:rgba(155,123,255,.16);color:var(--pu)}ul.sig em.trust{background:rgba(61,255,154,.12);color:var(--gr)}
+.priv{margin-top:10px;font-size:12px;padding:8px 10px;border-radius:10px;background:rgba(61,255,154,.07);border:1px dashed rgba(61,255,154,.35);color:#b5ffd9}
+.priv.sp2{background:rgba(255,61,90,.07);border-color:rgba(255,61,90,.4);color:#ffc2cc}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.kv div{background:rgba(3,8,18,.55);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.kv b{display:block;font:700 18px 'JetBrains Mono',monospace}.kv small{color:var(--mut);font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+.mem{font:11px/1.35 'JetBrains Mono',monospace;color:var(--mut);margin-top:8px;max-height:92px;overflow:auto}
+.mem div{padding:4px 0;border-top:1px solid var(--line)}
+.scn{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.scn button{text-align:left;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(20,34,62,.55);font-size:12px;line-height:1.25}
+.scn button small{display:block;color:var(--mut);font-size:10.5px;margin-top:2px}
+.scn button:hover{border-color:var(--cy)}.scn button.bad:hover{border-color:var(--rd)}
+.act{font:700 11px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:7px;display:inline-block}
+.ALLOW{background:rgba(61,255,154,.14);color:var(--gr)}.VERIFY{background:rgba(255,194,74,.16);color:var(--am)}.HOLD{background:rgba(255,138,61,.18);color:var(--or)}.BLOCK{background:rgba(255,61,90,.2);color:var(--rd)}
+.meter{height:10px;border-radius:99px;background:linear-gradient(90deg,var(--gr) 0 30%,var(--am) 30% 60%,var(--or) 60% 85%,var(--rd) 85%);position:relative;margin:10px 0 4px;opacity:.9}
+.meter i{position:absolute;top:-4px;width:4px;height:18px;border-radius:3px;background:#fff;box-shadow:0 0 10px #fff;transition:left .5s cubic-bezier(.2,.9,.2,1)}
+.rs{margin-top:8px;display:flex;flex-direction:column;gap:5px;font-size:12px}
+.rs div{display:flex;gap:8px;align-items:baseline}.rs b{font:700 11px 'JetBrains Mono',monospace;color:var(--or);min-width:34px}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.sg div{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}.sg i{display:block;height:5px;border-radius:5px;background:rgba(255,255,255,.08);margin-top:4px;overflow:hidden}.sg i u{display:block;height:100%;background:linear-gradient(90deg,var(--cy),var(--pu));text-decoration:none}
+.feed{max-height:150px;overflow:auto;font:11.5px/1.3 'JetBrains Mono',monospace}
+.feed div{display:flex;gap:8px;padding:4px 0;border-top:1px solid var(--line);align-items:center}.feed span{color:var(--mut);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.case{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(3,8,18,.5);margin-top:7px;font-size:12px}
+.case b{font-family:'JetBrains Mono',monospace}.case p{color:var(--mut);margin:4px 0 6px;line-height:1.35}
+.strip{position:fixed;left:0;right:0;bottom:0;height:84px;z-index:4;display:flex;gap:10px;align-items:center;padding:10px 16px;background:linear-gradient(0deg,rgba(5,7,13,.95),transparent)}
+.m{flex:1;min-width:0;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:8px 12px;backdrop-filter:blur(10px)}
+.m small{display:block;color:var(--mut);font-size:10px;letter-spacing:.08em;text-transform:uppercase}.m b{font:700 20px 'JetBrains Mono',monospace}.m em{font-style:normal;font-size:10px;color:var(--mut);margin-left:4px}
+.hudc{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:3;text-align:center;pointer-events:none;font:11px 'JetBrains Mono',monospace;color:var(--mut)}
+.hudc b{color:var(--rd);font-size:15px}
+.hudt{position:fixed;left:50%;transform:translateX(-50%);top:62px;z-index:3;pointer-events:none;font:11px 'JetBrains Mono',monospace;letter-spacing:.16em;color:var(--cy);opacity:.8;text-align:center}
+.drawer{position:fixed;inset:0;z-index:9;background:rgba(3,5,10,.82);backdrop-filter:blur(8px);display:none;overflow:auto;padding:70px 5vw 40px}
+.drawer.on{display:block}.drawer .x{position:fixed;top:16px;right:20px}
+.drawer h3{color:var(--cy);margin:26px 0 8px;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+table{border-collapse:collapse;width:100%;font:12px 'JetBrains Mono',monospace;background:var(--glass);border-radius:10px;overflow:hidden}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600}
+.note{color:var(--mut);font-size:12px;margin:6px 0;max-width:900px;line-height:1.45}
+.good{color:var(--gr)}.badc{color:var(--rd)}
+dialog{background:#0b1426;color:var(--tx);border:1px solid var(--line);border-radius:14px;padding:18px;width:min(460px,92vw)}dialog::backdrop{background:rgba(0,0,0,.6)}
+input{width:100%;background:#050b17;border:1px solid var(--line);color:var(--tx);padding:9px;border-radius:8px;margin:8px 0;font:13px 'JetBrains Mono',monospace}
+@media(max-width:1000px){.logo small{display:none}.pill{font-size:10px;padding:5px 8px}main{flex-direction:column;overflow-y:auto;pointer-events:auto;bottom:84px}.col{width:100%;min-width:0;overflow:visible}.m small{font-size:9px}.m b{font-size:15px}.hudc,.hudt{display:none}.strip{gap:6px;padding:8px}.m{padding:6px 8px}}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas><div class="vig"></div>
+<header>
+  <div class="logo"><i></i>SHIELDNET<small>pre-network defence</small></div>
+  <div class="sp"></div>
+  <div class="pill" id="mode">connecting…</div>
+  <button class="btn sm" id="bMetrics">Proof &amp; metrics</button>
+  <button class="btn sm" id="bCfg">⚙ API</button>
+</header>
+<div class="hudt">INTERNET · DEVICES  ▸  SHIELD  ▸  UPI / BANK NETWORK</div>
+<main>
+  <section class="col" id="left">
+    <div class="card">
+      <h2>Message shield <span>reads spam &amp; links before they reach the phone</span></h2>
+      <textarea id="msg" placeholder="Paste an SMS / WhatsApp / email / link…"></textarea>
+      <div class="chips" id="samples"></div>
+      <div class="row"><button class="btn pri" id="bAnalyze">Analyse</button><button class="btn sm" id="bReport">Report as spam</button><span class="sub" id="lat"></span></div>
+      <div class="res" id="mres">
+        <div class="gauge"><div class="ring"><svg width="74" height="74"><circle cx="37" cy="37" r="31" stroke="rgba(255,255,255,.1)" stroke-width="7" fill="none"/><circle id="arc" cx="37" cy="37" r="31" stroke="#3dff9a" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="195" style="transition:all .7s"/></svg><b id="score">0</b></div>
+        <div><div class="verdict" id="verdict">—</div><div class="sub" id="vsub"></div></div></div>
+        <ul class="sig" id="sigs"></ul>
+        <div id="urls"></div>
+        <div class="priv" id="privline"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Privacy ledger <span>only confirmed spam is remembered</span></h2>
+      <div class="kv"><div><b id="kP">0</b><small>analysed</small></div><div><b id="kD" style="color:var(--gr)">0</b><small>discarded</small></div><div><b id="kS" style="color:var(--rd)">0</b><small>spam kept</small></div></div>
+      <div class="mem" id="mem"><span>No spam fingerprints stored yet. Normal messages never are.</span></div>
+    </div>
+  </section>
+  <section class="col" id="right">
+    <div class="card">
+      <h2>Transaction shield <span>live scenarios through the real engine</span></h2>
+      <div class="scn" id="scn"></div>
+    </div>
+    <div class="card" id="dec">
+      <h2>Decision <span id="decsub">run a scenario</span></h2>
+      <div class="row"><span class="act ALLOW" id="decact">—</span><span class="sub" id="decint"></span><span class="sp"></span><b id="decrisk" style="font:700 22px 'JetBrains Mono',monospace">0.00</b></div>
+      <div class="meter"><i id="needle" style="left:0%"></i></div>
+      <div class="sg"><div>Model<i><u id="sgM" style="width:0"></u></i></div><div>Anomaly<i><u id="sgA" style="width:0"></u></i></div><div>Graph<i><u id="sgG" style="width:0"></u></i></div></div>
+      <div class="rs" id="reasons"></div>
+    </div>
+    <div class="card">
+      <h2>Live feed <span id="feedsub">replay of the unseen test period</span> <span class="sp"></span><button class="btn sm" id="bFeed">▶ Play</button></h2>
+      <div class="feed" id="feed"></div>
+    </div>
+    <div class="card">
+      <h2>Cases <span>rings merge into ONE case</span> <span class="sp"></span><button class="btn sm" id="bRetrain">Retrain</button></h2>
+      <div id="cases"><span class="sub">No open cases.</span></div>
+    </div>
+  </section>
+</main>
+<div class="hudc">stopped before the network: <b id="hStop">0</b> &nbsp;·&nbsp; passed: <span id="hPass">0</span> &nbsp;·&nbsp; <span id="hClu"></span></div>
+<div class="strip">
+  <div class="m"><small>Precision</small><b id="mP">–</b></div><div class="m"><small>Recall</small><b id="mR">–</b></div>
+  <div class="m"><small>False-pos. rate</small><b id="mF">–</b></div><div class="m"><small>p95 latency</small><b id="mL">–</b><em>ms</em></div>
+  <div class="m"><small>Legit untouched</small><b id="mU">–</b></div><div class="m"><small>Decoys allowed</small><b id="mD">–</b></div>
+</div>
+<div class="drawer" id="drawer"><button class="btn x" id="bClose">✕ Close</button><div id="proof"></div></div>
+<dialog id="cfg"><h3 style="margin-bottom:6px">Backend URL</h3><p class="sub">Leave empty for the in-browser demo engine. Paste your hosted server URL (e.g. https://shieldnet.onrender.com) to use the real trained engine.</p><input id="apiIn" placeholder="https://your-backend.onrender.com"><div class="row"><button class="btn pri" id="apiSave">Save &amp; reload</button><button class="btn" id="apiCancel">Cancel</button></div></dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+/* =========================================================================================
+   ShieldNet front-end: vanilla JS + Three.js.  Talks to server.py (real engine) or, if no backend
+   is reachable, falls back to a small in-browser DEMO engine so the page still works on GitHub Pages.
+   ========================================================================================= */
+const $=id=>document.getElementById(id);
+const COL={ALLOW:0x3dff9a,VERIFY:0xffc24a,HOLD:0xff8a3d,BLOCK:0xff3d5a};
+const SNAPSHOT={"test":{"precision":0.78,"recall":0.97,"fpr":0.0068,"f1":0.865,"tp":96,"fp":27,"fn":3,"tn":3950,"pr_auc":0.984,"test_txns":4076,"friction_on_legit":{"verify":0.0153,"hold_block":0.0068,"allowed_untouched":0.9779},"actions":{"ALLOW":3889,"VERIFY":64,"HOLD":10,"BLOCK":113},"decoy_pass_rate":0.903,"decoys":62,"decoy_breakdown":{"new_business_payee":"0/3 allowed","business_owner":"49/49 allowed","traveller":"6/6 allowed","big_purchase":"0/2 allowed","new_phone":"0/1 allowed","salary_bonus":"1/1 allowed"}},"thresholds":{"verify_from":0.091,"hold_from":0.283,"block_from":0.401,"tuned_on":"validation only"},"fusion_weights_learned":{"model":4.42,"anomaly":0.75,"graph":0.49,"bias":-1.83},"per_pattern_recall":{"circular (obvious)":{"recall":1.0,"n":5},"circular (subtle)":{"recall":1.0,"n":8},"mule_ring (subtle)":{"recall":1.0,"n":22},"pass_through (obvious)":{"recall":1.0,"n":4},"pass_through (subtle)":{"recall":1.0,"n":4},"structuring (obvious)":{"recall":1.0,"n":18},"structuring (subtle)":{"recall":1.0,"n":22},"takeover (obvious)":{"recall":1.0,"n":8},"takeover (subtle)":{"recall":0.625,"n":8}},"baseline_rule_amount_gt_50k":{"precision":0.031,"recall":0.071,"fpr":0.0553,"f1":0.043,"tp":7,"fp":220,"fn":92,"tn":3757},"baseline_3_rule_engine":{"precision":0.056,"recall":0.303,"fpr":0.1262,"f1":0.095,"tp":30,"fp":502,"fn":69,"tn":3475},"ablation":{"model only":{"precision":0.793,"recall":0.97,"fpr":0.0063,"f1":0.873,"tp":96,"fp":25,"fn":3,"tn":3952,"pr_auc":0.983},"anomaly only":{"precision":0.132,"recall":0.828,"fpr":0.1353,"f1":0.228,"tp":82,"fp":538,"fn":17,"tn":3439,"pr_auc":0.093},"graph only":{"precision":0.103,"recall":0.606,"fpr":0.132,"f1":0.175,"tp":60,"fp":525,"fn":39,"tn":3452,"pr_auc":0.598},"model + anomaly":{"precision":0.768,"recall":0.97,"fpr":0.0073,"f1":0.857,"tp":96,"fp":29,"fn":3,"tn":3948,"pr_auc":0.984},"model + graph":{"precision":0.793,"recall":0.97,"fpr":0.0063,"f1":0.873,"tp":96,"fp":25,"fn":3,"tn":3952,"pr_auc":0.984},"all three (fused)":{"precision":0.78,"recall":0.97,"fpr":0.0068,"f1":0.865,"tp":96,"fp":27,"fn":3,"tn":3950,"pr_auc":0.985}},"latency_ms":{"p50":0.304,"p95":0.451,"p99":0.62,"p95_by_component":{"features":0.028,"model":0.004,"isolation_forest":0.016,"graph":0.411},"note":"end-to-end, no SHAP (SHAP only computed for Verify/Hold/Block)"},"data":{"transactions":20379,"accounts":1107,"fraud_rate":0.0396,"decoys":409,"split":{"train":12227,"validation":4076,"test":4076},"no_future_leak_test":true,"forbidden_features_guard":["decoy","label","pattern","variant"],"feature_count":22},"held_out_pattern":{"pattern":"account takeover (removed from training AND validation)","test_cases":16,"recall":0.75,"note":"supervised model never saw this fraud type; recall comes from generalising features + anomaly detector"},"adaptive":{"feedback_rows":161,"window":"analyst labels from the first half of the test period; scored on the second half","before":{"precision":0.476,"recall":0.909,"fpr":0.0054,"f1":0.625,"tp":10,"fp":11,"fn":1,"tn":2016},"after":{"precision":0.455,"recall":0.909,"fpr":0.0059,"f1":0.606,"tp":10,"fp":12,"fn":1,"tn":2015},"honest_note":"the learned supervised layer improves only if feedback contains patterns the model had under-weighted; report is raw, not cherry-picked"},"messages":{"dev":{"n":33,"precision":1.0,"recall":1.0,"false_positive_rate":0.0,"accuracy":1.0,"misses":[]},"held_out":{"n":24,"precision":1.0,"recall":0.833,"false_positive_rate":0.0,"accuracy":0.917,"misses":["Bro easy money, just complete 3 tasks and get Rs 800 each. T","Hi, this is the cyber crime branch. Your Aadhaar is linked t"]}},"build_seconds":12.9};   // metrics snapshot of a reference run of server.py (used only in demo mode)
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+
+/* ---------------------------------- 3D visual ---------------------------------- */
+class ThreeViz{
+  constructor(canvas){
+    const T=THREE,W=innerWidth,H=innerHeight; this.T=T;
+    this.r=new T.WebGLRenderer({canvas,antialias:true,alpha:true}); this.r.setPixelRatio(Math.min(devicePixelRatio,2)); this.r.setSize(W,H);
+    this.s=new T.Scene(); this.cam=new T.PerspectiveCamera(52,W/H,.1,200); this.cam.position.set(0,2.2,17.5);
+    this.tex=this.glowTex(); this.fl=0; this.flc=new T.Color(0x38e8ff); this.pk=[]; this.fx=[]; this.pulse=0; this.mx=0; this.my=0; this.clu=null;
+    // outer internet / device nodes
+    const N=260,pos=[],P=[]; for(let i=0;i<N;i++){const y=1-2*(i+.5)/N,rad=Math.sqrt(1-y*y),th=i*2.399963,R=11+(Math.random()-.5)*1.4;P.push(new T.Vector3(Math.cos(th)*rad*R,y*R,Math.sin(th)*rad*R));pos.push(P[i].x,P[i].y,P[i].z)}
+    this.outer=P; const g=new T.BufferGeometry(); g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
+    this.grp=new T.Group(); this.s.add(this.grp);
+    this.grp.add(new T.Points(g,new T.PointsMaterial({size:.42,map:this.tex,color:0x6fb8ff,transparent:true,depthWrite:false,blending:T.AdditiveBlending})));
+    const lp=[]; for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){if(P[i].distanceTo(P[j])<2.7){lp.push(P[i].x,P[i].y,P[i].z,P[j].x,P[j].y,P[j].z)}}
+    const lg=new T.BufferGeometry(); lg.setAttribute('position',new T.Float32BufferAttribute(lp,3));
+    this.grp.add(new T.LineSegments(lg,new T.LineBasicMaterial({color:0x3a78c8,transparent:true,opacity:.17})));
+    // shield
+    this.sh=new T.Mesh(new T.IcosahedronGeometry(5,2),new T.MeshBasicMaterial({color:0x38e8ff,wireframe:true,transparent:true,opacity:.1,depthWrite:false}));
+    this.sh2=new T.Mesh(new T.SphereGeometry(5.05,48,32),new T.MeshBasicMaterial({color:0x38e8ff,transparent:true,opacity:.035,side:T.BackSide,blending:T.AdditiveBlending,depthWrite:false}));
+    this.s.add(this.sh,this.sh2);
+    this.rings=[0,1,2].map(i=>{const m=new T.Mesh(new T.TorusGeometry(5.12+i*.02,.018,8,160),new T.MeshBasicMaterial({color:i?0x9b7bff:0x38e8ff,transparent:true,opacity:.55}));m.rotation.set(1.1*i+.3,.6*i,0);this.s.add(m);return m});
+    // core: UPI / bank network
+    this.core=new T.Mesh(new T.IcosahedronGeometry(1.35,1),new T.MeshBasicMaterial({color:0x56f0ff,wireframe:true,transparent:true,opacity:.9}));
+    this.coreGlow=new T.Sprite(new T.SpriteMaterial({map:this.tex,color:0x38e8ff,transparent:true,blending:T.AdditiveBlending,depthWrite:false,opacity:.9})); this.coreGlow.scale.set(6,6,1);
+    this.s.add(this.core,this.coreGlow);
+    const inner=[];for(let i=0;i<44;i++){const a=Math.random()*6.28,b=Math.acos(2*Math.random()-1),rr=2.2+Math.random()*1.4;inner.push(rr*Math.sin(b)*Math.cos(a),rr*Math.sin(b)*Math.sin(a),rr*Math.cos(b))}
+    const ig=new T.BufferGeometry();ig.setAttribute('position',new T.Float32BufferAttribute(inner,3));this.inner=new T.Points(ig,new T.PointsMaterial({size:.3,map:this.tex,color:0x3dffc0,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));this.s.add(this.inner);
+    addEventListener('resize',()=>{this.cam.aspect=innerWidth/innerHeight;this.cam.updateProjectionMatrix();this.r.setSize(innerWidth,innerHeight)});
+    addEventListener('mousemove',e=>{this.mx=e.clientX/innerWidth-.5;this.my=e.clientY/innerHeight-.5});
+    this.t0=performance.now(); this.loop=this.loop.bind(this); requestAnimationFrame(this.loop);
+  }
+  glowTex(){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.25,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new this.T.CanvasTexture(c)}
+  spr(color,size,op){const s=new this.T.Sprite(new this.T.SpriteMaterial({map:this.tex,color,transparent:true,blending:this.T.AdditiveBlending,depthWrite:false,opacity:op==null?1:op}));s.scale.set(size,size,1);this.s.add(s);return s}
+  flash(color,amt){this.fl=Math.max(this.fl,amt);this.flc.setHex(color)}
+  packet(outcome){
+    const T=this.T,p0=this.outer[Math.floor(Math.random()*this.outer.length)].clone(),dir=p0.clone().normalize(),H=dir.clone().multiplyScalar(5.1);
+    const sp=this.spr(0xffffff,.9);this.pk.push({sp,p0,H,outcome,t:0,ph:0,wait:0,col:COL[outcome]||0xffffff,orbit:Math.random()*6.28,trail:[this.spr(0xffffff,.5,.5),this.spr(0xffffff,.3,.3)]});
+  }
+  burst(at,color,n){const T=this.T;for(let i=0;i<n;i++){const s=this.spr(color,.45,1),v=new T.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize().multiplyScalar(.04+Math.random()*.14);s.position.copy(at);this.fx.push({s,v,life:1,k:'p'})}
+    const rg=new T.Mesh(new T.RingGeometry(.2,.28,48),new T.MeshBasicMaterial({color,transparent:true,opacity:.9,side:T.DoubleSide,blending:T.AdditiveBlending,depthWrite:false}));rg.position.copy(at);rg.lookAt(at.clone().multiplyScalar(2));this.s.add(rg);this.fx.push({s:rg,life:1,k:'r'})}
+  cluster(nodes,edges){
+    const T=this.T;if(this.clu){this.s.remove(this.clu.g)}const g=new T.Group();g.position.set(0,-6.6,3);const m={};const n=Math.min(nodes.length,28);
+    nodes.slice(0,n).forEach((id,i)=>{const a=i/n*6.283,rr=1.4+(i%3)*.5,p=new T.Vector3(Math.cos(a)*rr*1.4,(i%4-1.5)*.35,Math.sin(a)*rr);m[id]=p;const s=new T.Sprite(new T.SpriteMaterial({map:this.tex,color:0xff3d5a,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));s.scale.set(.7,.7,1);s.position.copy(p);g.add(s)});
+    const lp=[];edges.slice(0,60).forEach(e=>{if(m[e[0]]&&m[e[1]]){lp.push(m[e[0]].x,m[e[0]].y,m[e[0]].z,m[e[1]].x,m[e[1]].y,m[e[1]].z)}});
+    const lg=new T.BufferGeometry();lg.setAttribute('position',new T.Float32BufferAttribute(lp,3));g.add(new T.LineSegments(lg,new T.LineBasicMaterial({color:0xff6a85,transparent:true,opacity:.75})));
+    this.s.add(g);this.clu={g,t:0};
+  }
+  loop(){
+    requestAnimationFrame(this.loop);const T=this.T,t=(performance.now()-this.t0)/1000;
+    this.grp.rotation.y=t*.025;this.sh.rotation.y=-t*.05;this.core.rotation.x=t*.3;this.core.rotation.y=t*.45;this.inner.rotation.y=t*.12;
+    this.rings.forEach((r,i)=>{r.rotation.z=t*(.12+i*.07)*(i%2?-1:1)});
+    this.fl*=.93;const f=this.fl;this.sh.material.opacity=.1+f*.5;this.sh2.material.opacity=.035+f*.25;this.sh.material.color.copy(new T.Color(0x38e8ff).lerp(this.flc,clamp(f*2,0,1)));
+    this.pulse*=.95;this.coreGlow.scale.setScalar(6+this.pulse*3+Math.sin(t*2)*.25);
+    this.cam.position.x+=(this.mx*5-this.cam.position.x)*.03;this.cam.position.y+=(2.2-this.my*3.5-this.cam.position.y)*.03;this.cam.lookAt(0,-.4,0);
+    for(let i=this.pk.length-1;i>=0;i--){const k=this.pk[i];let done=false;const col=k.col;
+      k.sp.material.color.setHex(col);k.trail.forEach(s=>s.material.color.setHex(col));
+      if(k.ph===0){k.t+=.014;const e=k.t*k.t*(3-2*k.t),p=k.p0.clone().lerp(k.H,e);k.sp.position.copy(p);if(k.t>=1){k.ph=1;
+          if(k.outcome==='BLOCK'){this.burst(k.H,0xff3d5a,36);this.flash(0xff3d5a,.9);done=true}
+          else if(k.outcome==='ALLOW'){this.flash(0x3dff9a,.25)}else if(k.outcome==='VERIFY'){this.flash(0xffc24a,.4)}else{this.flash(0xff8a3d,.5)}}}
+      else if(k.ph===1){k.wait++;
+        if(k.outcome==='ALLOW'){k.t=0;k.ph=2}
+        else if(k.outcome==='VERIFY'){k.sp.scale.setScalar(.9+Math.sin(k.wait*.3)*.25);if(k.wait>55){k.t=0;k.ph=2}}
+        else{const a=k.orbit+k.wait*.03,R=5.7;k.sp.position.set(Math.cos(a)*R*Math.cos(.5),Math.sin(.5)*R*Math.sin(a*.6),Math.sin(a)*R*Math.cos(.5));k.sp.scale.setScalar(.9+Math.sin(k.wait*.2)*.2);k.sp.material.opacity=1-k.wait/260;if(k.wait>260)done=true}}
+      else if(k.ph===2){k.t+=.02;const e=k.t*k.t*(3-2*k.t);k.sp.position.copy(k.H.clone().multiplyScalar(1-e));if(k.t>=1){this.pulse=1;this.coreGlow.material.color.setHex(col);done=true}}
+      if(k.trail){k.trail[0].position.copy(k.sp.position).multiplyScalar(1.03);k.trail[1].position.copy(k.sp.position).multiplyScalar(1.07)}
+      if(done){this.s.remove(k.sp);k.trail.forEach(s=>this.s.remove(s));this.pk.splice(i,1)}}
+    for(let i=this.fx.length-1;i>=0;i--){const f2=this.fx[i];f2.life-=.022;
+      if(f2.k==='p'){f2.s.position.add(f2.v);f2.s.material.opacity=Math.max(0,f2.life)}else{f2.s.scale.multiplyScalar(1.07);f2.s.material.opacity=Math.max(0,f2.life)}
+      if(f2.life<=0){this.s.remove(f2.s);this.fx.splice(i,1)}}
+    if(this.clu){this.clu.t++;this.clu.g.rotation.y+=.006;if(this.clu.t>900){this.s.remove(this.clu.g);this.clu=null}}
+    this.r.render(this.s,this.cam);
+  }
+}
+/* 2D fallback (used only when WebGL / Three.js is unavailable) */
+class CanvasViz{
+  constructor(c){this.c=c;this.x=c.getContext('2d');this.pk=[];this.fx=[];this.fl=0;this.clu=null;this.dots=[...Array(150)].map(()=>({a:Math.random()*6.28,r:.78+Math.random()*.2,s:(Math.random()-.5)*.002}));
+    const rs=()=>{c.width=innerWidth;c.height=innerHeight};rs();addEventListener('resize',rs);requestAnimationFrame(t=>this.loop(t))}
+  flash(c,a){this.fl=Math.max(this.fl,a);this.flc=c} packet(o){const a=Math.random()*6.28;this.pk.push({a,t:0,ph:0,o,w:0})}
+  burst(){} cluster(n,e){this.clu={n:n.slice(0,24),e,t:0}}
+  hex(c){return '#'+c.toString(16).padStart(6,'0')}
+  loop(){requestAnimationFrame(t=>this.loop(t));const c=this.c,x=this.x,W=c.width,H=c.height,cx=W/2,cy=H/2-10,R=Math.min(W,H)*.27,O=R*1.9,tt=performance.now()/1000;x.clearRect(0,0,W,H);
+    x.fillStyle='rgba(111,184,255,.65)';this.dots.forEach(d=>{d.a+=d.s;x.beginPath();x.arc(cx+Math.cos(d.a)*O*d.r*1.1,cy+Math.sin(d.a)*O*d.r*.8,1.6,0,6.3);x.fill()});
+    this.fl*=.93;x.lineWidth=2;x.strokeStyle=this.fl>.05?this.hex(this.flc||0x38e8ff):'rgba(56,232,255,.5)';x.shadowBlur=18+this.fl*40;x.shadowColor=x.strokeStyle;x.beginPath();x.arc(cx,cy,R,0,6.3);x.stroke();x.shadowBlur=0;
+    x.strokeStyle='rgba(155,123,255,.5)';x.beginPath();x.ellipse(cx,cy,R*1.02,R*.3,tt*.2,0,6.3);x.stroke();
+    const g=x.createRadialGradient(cx,cy,0,cx,cy,R*.45);g.addColorStop(0,'rgba(86,240,255,.9)');g.addColorStop(1,'rgba(86,240,255,0)');x.fillStyle=g;x.beginPath();x.arc(cx,cy,R*.45,0,6.3);x.fill();
+    x.fillStyle='#cdefff';x.font='11px monospace';x.textAlign='center';x.fillText('UPI · BANK NETWORK',cx,cy+4);
+    for(let i=this.pk.length-1;i>=0;i--){const k=this.pk[i];k.w++;let px,py,col=this.hex(COL[k.o]||0xffffff),done=false;
+      if(k.ph===0){k.t+=.016;px=cx+Math.cos(k.a)*(O-(O-R)*k.t);py=cy+Math.sin(k.a)*(O*.8-(O*.8-R)*k.t);if(k.t>=1){k.ph=1;k.w=0;if(k.o==='BLOCK'){this.flash(0xff3d5a,.9);for(let j=0;j<24;j++)this.fx.push({x:px,y:py,vx:(Math.random()-.5)*5,vy:(Math.random()-.5)*5,l:1});done=true}else this.flash(COL[k.o],.4)}}
+      else if(k.ph===1){px=cx+Math.cos(k.a)*R;py=cy+Math.sin(k.a)*R;if(k.o==='HOLD'){const a=k.a+k.w*.03;px=cx+Math.cos(a)*R*1.12;py=cy+Math.sin(a)*R*1.12;if(k.w>240)done=true}else if(k.w>(k.o==='VERIFY'?50:2)){k.ph=2;k.t=0}}
+      else{k.t+=.02;px=cx+Math.cos(k.a)*R*(1-k.t);py=cy+Math.sin(k.a)*R*(1-k.t);if(k.t>=1)done=true}
+      if(px!=null){x.fillStyle=col;x.shadowBlur=14;x.shadowColor=col;x.beginPath();x.arc(px,py,5,0,6.3);x.fill();x.shadowBlur=0}if(done)this.pk.splice(i,1)}
+    for(let i=this.fx.length-1;i>=0;i--){const f=this.fx[i];f.x+=f.vx;f.y+=f.vy;f.l-=.025;x.fillStyle='rgba(255,61,90,'+Math.max(0,f.l)+')';x.fillRect(f.x,f.y,3,3);if(f.l<=0)this.fx.splice(i,1)}
+    if(this.clu){this.clu.t++;const n=this.clu.n,m={};n.forEach((id,i)=>{const a=i/n.length*6.28+tt*.2;m[id]=[cx+Math.cos(a)*90,cy+R*1.35+Math.sin(a)*28]});x.strokeStyle='rgba(255,106,133,.7)';this.clu.e.forEach(e=>{if(m[e[0]]&&m[e[1]]){x.beginPath();x.moveTo(...m[e[0]]);x.lineTo(...m[e[1]]);x.stroke()}});x.fillStyle='#ff3d5a';n.forEach(id=>{x.beginPath();x.arc(m[id][0],m[id][1],4,0,6.3);x.fill()});if(this.clu.t>900)this.clu=null}}
+}
+let viz;try{if(!window.THREE)throw 0;viz=new ThreeViz($('gl'))}catch(e){try{viz=new CanvasViz($('gl'))}catch(_){viz={packet(){},cluster(){},flash(){}}}}
+
+/* ---------------------------------- engine adapters ---------------------------------- */
+const qs=new URLSearchParams(location.search);
+let API=(qs.get('api')||localStorage.getItem('shieldnet_api')||'').replace(/\/$/,'');
+if(!API&&location.protocol.startsWith('http')&&!/github\.io$/.test(location.hostname)&&location.port)API=location.origin;
+let LIVE=false;
+async function call(path,body){
+  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),body?20000:6000);
+  try{const r=await fetch(API+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:ctl.signal});const j=await r.json();if(r.status===503)throw Object.assign(new Error('training'),{training:j});return j}finally{clearTimeout(to)}
+}
+/* ---- in-browser DEMO engine (same logic, simplified; the real trained engine is server.py) ---- */
+const Demo=(()=>{
+  const LX={ask_secret:[30,/\b(share|send|tell|provide|enter|confirm|verify|update|give)\b[^.\n]{0,45}\b(otp|pin|cvv|password|passcode|card (number|details)|aadhaar|pan (card|number)|upi pin|mpin|net ?banking)\b|\breceive\b[^.\n]{0,40}\b(enter|input|type)\b[^.\n]{0,25}\bpin\b/i,'asks for a secret (OTP/PIN/password/card)'],
+   ask_money:[22,/\b(send|transfer|pay|deposit|remit)\b[^.\n]{0,30}(\brs\.?|\binr\b|₹|\busd\b|\$|\bfee\b|\bcharges?\b|\bfunds?\b|\busdt\b)|\b(processing|registration|release|clearance|customs|delivery) (fee|charge)s?\b|\bcollect request\b|\bscan (this |the )?qr\b/i,'asks you to pay / send money / approve a request'],
+   urgency:[14,/\b(urgent(ly)?|immediately|right now|asap|within \d+ ?(hours?|hrs?|minutes?|mins?)|expires? (today|soon|in)|last (chance|warning|notice)|act now|final (notice|reminder))\b/i,'manufactured urgency'],
+   fear:[16,/\b(blocked|suspended|deactivated|frozen|terminated|disconnected|will be closed|arrest(ed)?|warrant|legal action|police|penalty|seized|unauthori[sz]ed (login|transaction))\b/i,'threat / fear of account loss or legal action'],
+   authority:[8,/\b(rbi|npci|sbi|hdfc|icici|bank|customs|income tax|cbi|trai|police|uidai|aadhaar|courier|fedex|dhl|amazon|paytm|kyc)\b/i,'impersonates a bank / agency / courier'],
+   reward:[16,/\b(lottery|jackpot|winner|you (have )?won|prize|congratulations|lucky draw|gift (card|voucher)|claim (your|now))\b/i,'unexpected prize / reward bait'],
+   remote:[34,/\b(anydesk|teamviewer|quick ?support|screen ?shar(e|ing)|remote (access|support)|install (this |the |our )?(app|apk))\b/i,'pushes remote-access / app install'],
+   advance_fee:[28,/\b(inheritance|beneficiary|barrister|next of kin|unclaimed funds|million (usd|dollars)|transfer of (the )?funds?)\b/i,'advance-fee / inheritance pattern'],
+   job_task:[22,/\b(part[- ]time job|work from home|earn (rs\.? ?|₹ ?)?\d[\d,]*|daily (income|payout)|like (and|&) subscribe)\b/i,'easy-income task lure'],
+   invest:[22,/\b(guaranteed returns?|double your money|risk[- ]free|insider tip|crypto|usdt|vip signals?|100% (profit|returns?))\b/i,'guaranteed-return / crypto lure'],
+   shift:[10,/\b(whats ?app|telegram|signal|call|contact|message|dm)\b[^.\n]{0,25}(\+?\d[\d ]{8,}|@\w{3,}|t\.me\/)|\bt\.me\/\w+/i,'moves you to a private channel / unknown number'],
+   kyc:[16,/\bkyc\b[^.\n]{0,40}\b(expire[sd]?|update|pending|verify|incomplete|suspend)\w*/i,'KYC-expiry pretext']};
+  const OFF={sbi:['sbi.co.in','onlinesbi.sbi'],hdfc:['hdfcbank.com'],icici:['icicibank.com'],axis:['axisbank.com'],paytm:['paytm.com'],phonepe:['phonepe.com'],npci:['npci.org.in'],amazon:['amazon.in','amazon.com'],irctc:['irctc.co.in'],uidai:['uidai.gov.in'],incometax:['incometax.gov.in'],paypal:['paypal.com'],netflix:['netflix.com'],google:['google.com'],flipkart:['flipkart.com']};
+  const BAD=/\.(xyz|top|click|zip|mov|tk|ml|ga|cf|gq|work|loan|icu|buzz|cyou|support|pw|vip|club|sbs)$/;
+  const SHORT=['bit.ly','tinyurl.com','t.co','goo.gl','is.gd','cutt.ly','rb.gy','tiny.cc'];
+  const URLRX=/\b(?:(?:https?|hxxps?):\/\/[^\s<>"']+|www\.[^\s<>"']+|\d{1,3}(?:\.\d{1,3}){3}(?:\/[^\s<>"']*)?|[a-z0-9][a-z0-9\-.]{1,60}\.(?:com|in|net|org|co|io|info|biz|me|xyz|top|click|zip|mov|tk|ml|ga|cf|gq|work|loan|icu|buzz|support|pw|vip|club|site|online|shop|link|app|live|ly)(?:\/[^\s<>"']*)?)/gi;
+  const reg=h=>{const p=h.split('.');return p.length>=3&&['co','com','org','net','gov','ac'].includes(p[p.length-2])&&p[p.length-1].length===2?p.slice(-3).join('.'):p.slice(-2).join('.')};
+  const lev=(a,b)=>{if(Math.abs(a.length-b.length)>2)return 9;let p=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c.push(Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]!==b[j-1])));p=c}return p[b.length]};
+  const leet=s=>s.replace(/0/g,'o').replace(/1/g,'l').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/rn/g,'m');
+  function url(raw){
+    let u=raw.replace(/hxxp/g,'http').replace(/\[\.\]/g,'.').replace(/[.,;:!?)\]'"]+$/,''),f=[],pts=0,dec=false;const add=(p,t,d)=>{pts+=p;f.push(t);dec=dec||!!d};
+    let host='';try{host=new URL(/^[a-z]+:\/\//i.test(u)?u:'http://'+u).hostname.toLowerCase()}catch(e){host=u.split('/')[0].toLowerCase()}
+    const path=u.toLowerCase().replace(/^[a-z]+:\/\/[^\/]*/,''),R=reg(host);
+    if(/@/.test(u.split('/')[2]||''))add(30,'credentials/@ in URL hides the real host',1);
+    if(/^\d{1,3}(\.\d{1,3}){3}$/.test(host))add(34,'raw IP address instead of a domain',1);
+    if(SHORT.includes(R))add(18,'link shortener hides the destination');
+    if(/xn--/.test(host))add(28,'punycode (look-alike unicode) domain',1);
+    if(BAD.test(host))add(14,'high-abuse TLD .'+host.split('.').pop());
+    if(/^http:/i.test(u))add(6,'no HTTPS');
+    const body=leet(host.replace(/\.[a-z]+$/,'')),toks=body.split(/[-_.\d]+/).filter(Boolean);let hit=null;
+    for(const b in OFF){if(OFF[b].includes(R)){hit=null;break}for(const t of toks)if(t===b||(b.length>=5&&t.length>=5&&lev(t,b)<=1))hit=b}
+    if(hit)add(42,"impersonates '"+hit+"' but is not its official domain ("+R+")",1);
+    if(new RegExp('\\.(apk|exe|scr|bat|cmd|vbs|jar|msi|lnk|ps1|hta|docm|xlsm)(\\?|$)').test(path))add(40,'link downloads an executable/installer file',1);
+    if(/\.(pdf|docx?|xlsx?|jpg|png)\.(apk|exe|scr|bat|vbs|js)/.test(path))add(20,'double-extension disguise');
+    if(/(login|signin|verify|kyc|secure|update|otp|claim|refund|wallet|reward|account)/.test(path+host))add(8,'credential-harvest keywords in URL');
+    return{url:raw.slice(0,90),host,score:Math.min(100,pts),flags:f,decisive:dec}}
+  const mem=[];const C={processed:0,discarded_normal:0,stored_spam:0,known_variant_hits:0};
+  const canon=t=>t.toLowerCase().replace(URLRX,' url ').replace(/\d/g,'#').match(/[a-z#]{2,}/g)||[];
+  const jac=(a,b)=>{const A=new Set(a),B=new Set(b);let i=0;A.forEach(x=>{if(B.has(x))i++});return i/(A.size+B.size-i||1)};
+  const redact=t=>t.replace(/[\w.+-]+@[\w-]+\.[\w.]+/g,'[email]').replace(URLRX,m=>'[link:'+reg((m.replace(/^[a-z]+:\/\//i,'').split('/')[0]))+']').replace(/\+?\d[\d\s-]{7,}\d/g,'[number]').replace(/\d{3,}/g,'###').slice(0,220);
+  function shield(text,store=true){
+    const t0=performance.now();C.processed++;const sig=[];let clean=text.replace(/[​‌‍⁠﻿­]/g,'');
+    const nz=(text.match(/[​‌‍⁠﻿­]/g)||[]).length;if(nz)sig.push(['hidden',12+Math.min(nz,6)*2,nz+' invisible characters used to slice keywords past filters',false]);
+    if(/[‪-‮⁦-⁩]/.test(text)){sig.push(['hidden',30,'bidirectional-override characters (text/extension spoofing)',true]);clean=clean.replace(/[‪-‮⁦-⁩]/g,'')}
+    for(const w of clean.match(/\S{3,}/g)||[]){if(/[a-z]/i.test(w)&&/[Ѐ-ӿͰ-Ͽ]/.test(w)){sig.push(['hidden',28,"homoglyph word '"+w.slice(0,20)+"' mixes alphabets to fake a brand/keyword",true]);break}}
+    if(/<\s*(script|iframe|object|embed|form)\b|\bon(error|load|click)\s*=|display\s*:\s*none/i.test(clean))sig.push(['hidden',40,'active/hidden HTML content (script, iframe, hidden text)',true]);
+    const fm=clean.match(/\b[\w-]+\.(apk|exe|scr|bat|cmd|vbs|jar|msi|lnk|ps1|hta|docm|xlsm)\b/i);if(fm)sig.push(['hidden',36,"attachment/file name '"+fm[0]+"' is an installable or executable type",true]);
+    const fired={};for(const k in LX){const m=clean.match(LX[k][1]);if(m)fired[k]=[LX[k][0],m[0].slice(0,50)]}
+    const prot=/\b(otp|code|pin)\b[^.\n]{0,60}\b(do not|don't|never)\b[^.\n]{0,20}\b(share|disclose)\b/i.test(clean);if(prot)delete fired.ask_secret;
+    const core=Object.keys(fired).filter(k=>k!=='authority');if(fired.authority&&!core.length)delete fired.authority;
+    let lex=0;for(const k in fired){sig.push(['lexical',fired[k][0],LX[k][2]+'  ["'+fired[k][1].trim()+'"]',false]);lex+=fired[k][0]}
+    const pr=fired.urgency||fired.fear,ask=fired.ask_secret||fired.ask_money||fired.remote;if(pr&&ask){sig.push(['lexical',16,'pressure + ask combination (classic social-engineering structure)',false]);lex+=16}
+    const hasUrl=(clean.match(URLRX)||[]).length>0;
+    if(/\b(debited|credited)\b[^.\n]{0,50}\b(rs\.?|inr|₹)\s?[\d,]+|\b(rs\.?|inr|₹)\s?[\d,]+\b[^.\n]{0,40}\b(debited|credited|spent|received)\b/i.test(clean)&&!hasUrl&&!ask){lex-=25;sig.push(['trust',-25,'looks like a plain transaction alert (no link, no ask)',false])}
+    if(prot&&!ask&&!hasUrl){lex-=30;sig.push(['trust',-30,"OTP notice with 'do not share' warning, no link",false])}
+    lex=clamp(lex,-40,78);const urls=(clean.match(URLRX)||[]).slice(0,8).map(url),us=Math.max(0,...urls.map(u=>u.score));
+    urls.forEach(u=>u.flags.forEach(f=>sig.push(['url',Math.round(u.score*.6),(u.host||'link')+': '+f,u.decisive])));
+    const hid=Math.min(60,sig.filter(s=>s[0]==='hidden').reduce((a,s)=>a+s[1],0)),fam=new Set(sig.filter(s=>s[1]>0&&s[0]!=='trust').map(s=>s[0]));
+    let total=lex+.75*us+hid;if(us>=40&&lex>=14){total+=10;sig.push(['synergy',10,'suspicious link AND persuasion language together',false])}
+    const tk=canon(clean);let memo=null;for(const m of mem){const j=jac(tk,m.tk);if(j>=.7){memo={distance:Math.round((1-j)*20),seen:m.hits,typology:m.typ};m.hits++;total=Math.max(total,88);fam.add('memory');C.known_variant_hits++;sig.push(['memory',40,'near-duplicate of known spam - old spam recognised instantly',true]);break}}
+    total=Math.round(clamp(total,0,100));const dec=sig.some(s=>s[3]);let verdict,action;
+    if(total>=60&&(fam.size>=2||dec)){verdict='SPAM';action='BLOCK'}else if(total>=30){verdict='SUSPICIOUS';action='WARN'}else{verdict='SAFE';action='ALLOW'}
+    let stored=false;if(verdict==='SPAM'&&store){mem.push({tk,hits:1,typ:Object.keys(fired).join('/')||'url',red:redact(clean)});C.stored_spam++;stored=true}else if(store)C.discarded_normal++;
+    return{verdict,action,score:total,families:[...fam],signals:sig.sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,10).map(s=>({family:s[0],points:s[1],text:s[2]})),urls,memory:memo,stored_in_memory:stored,privacy:stored?'redacted fingerprint of this SPAM kept for future matching':'message analysed in RAM and discarded - nothing stored',latency_ms:+(performance.now()-t0).toFixed(2)}}
+  /* transactions: scripted scenarios scored by a small fused-signal model */
+  const cases=[];let caseId=0;const sg=z=>1/(1+Math.exp(-z));
+  function score(tx,f){const m=sg(-4.6+1.9*f.nd+1.5*f.nc+.55*Math.min(f.ax,12)+1.6*f.young+.6*(f.str>=3)+.9*f.pass),a=clamp(.15+.12*f.nd+.1*Math.min(f.ax,10)/3+.4*(f.pass>0)+.2*(f.str>=3),0,1),g=clamp(f.cyc*.9+(f.str>=3?Math.min(1,.2+.2*f.str):0)+f.hub*.85+f.pass*.8+f.clu*.8,0,1);
+    const raw=sg(-2.6+4.2*(m-.5)*2*.5+2.4*a+3.6*g);let r=clamp((m*.45+a*.12+g*.5),0,1);r=Math.max(r,f.cyc?0.9:0);let act=r<.3?'ALLOW':r<.6?'VERIFY':r<.85?'HOLD':'BLOCK';
+    const n=(m>=.25)+(a>=.6)+(g>=.3);if((act==='HOLD'||act==='BLOCK')&&n<2&&m<.9&&g<.8)act='VERIFY';
+    const R=[];if(act!=='ALLOW'){if(f.nd&&f.nc)R.push(['new device AND new city together',24]);else if(f.nd)R.push(['payment from a new device',18]);if(f.ax>4)R.push(['amount far above this account\'s normal',20]);if(f.young)R.push(['first-time payee that is a brand-new account',16]);(f.find||[]).forEach(t=>R.push([t,Math.round(25+g*20)]))}
+    return{risk:+r.toFixed(3),action:act,signals:{model:+m.toFixed(3),anomaly:+a.toFixed(3),graph:+g.toFixed(3)},reasons:R.map(x=>({text:x[0],points:x[1]})),findings:f.find||[],latency_ms:+(.3+Math.random()*.25).toFixed(2),intervention:{ALLOW:'none - silent approval',VERIFY:'step-up verification (OTP / in-app confirmation)',HOLD:'hold payment, open case, contact customer',BLOCK:'block, freeze payee, escalate to fraud ops'}[act]}}
+  const F0={nd:0,nc:0,ax:.9,young:0,str:0,pass:0,cyc:0,hub:0,clu:0};
+  function scenario(name){
+    const id=()=>'AC'+String(Math.floor(Math.random()*900+100)).padStart(4,'0'),mu=()=>'MU'+Math.floor(Math.random()*9000+1000),out=[];let lab='';
+    if(name==='normal'){lab='Everyday payment to a known payee';const s=id(),r=id();out.push([s,r,1850,F0])}
+    else if(name==='salary'){lab='Large salary bonus credited (decoy - must be allowed)';out.push(['EMP1',id(),95000,{...F0,ax:2.2}])}
+    else if(name==='traveller'){lab='Genuine customer paying from a new city (decoy)';out.push([id(),id(),2400,{...F0,nc:1}])}
+    else if(name==='structuring'){lab='8 transfers just under the Rs 10,000 limit';const s=id(),r=[mu(),mu()];for(let i=0;i<8;i++)out.push([s,r[i%2],9000+Math.round(Math.random()*900),{...F0,young:1,str:i+1,find:i>=2?[(i+1)+' transfers just under the Rs 10,000 limit within 6h']:[]}])}
+    else if(name==='circular'){lab='A > B > C > D > A circular laundering';const m=[mu(),mu(),mu(),mu()];for(let i=0;i<4;i++)out.push([m[i],m[(i+1)%4],48000*Math.pow(.99,i),{...F0,young:1,nd:1,cyc:i===3?1:0,pass:i>0?.6:0,find:i===3?['Circular money flow '+m[3]+' > '+m.join(' > ')+' (4 hops)']:i>0?['Pass-through: Rs 48,000 in, same out after 2 min']:[]}])}
+    else if(name==='ring'){lab='9 young accounts sharing 2 devices pay one hub';const h=mu();for(let i=0;i<9;i++)out.push([mu(),h,2500+Math.round(Math.random()*5000),{...F0,young:1,nd:1,hub:Math.min(1,i/4),clu:Math.min(1,Math.max(0,(i-1)/5)),find:i>=3?['Payee is a hub: '+(i+1)+' senders in 24h (all new accounts)','Mule cluster: '+(i+1)+' accounts share devices']:[]}])}
+    else if(name==='takeover'){lab='New device + new city + huge transfer to a brand-new payee';out.push([id(),mu(),41000,{...F0,nd:1,nc:1,ax:9,young:1}])}
+    else if(name==='passthrough'){lab='Money in, almost the same out within 4 minutes';const v=id(),a=mu(),b=mu();out.push([v,a,52000,{...F0,young:1,ax:2}]);out.push([a,b,50440,{...F0,young:1,nd:1,pass:.8,find:['Pass-through: Rs 52,000 in, Rs 50,440 out after 4 min']}])}
+    else return null;
+    const res=out.map(o=>{const tx={s:o[0],r:o[1],amt:o[2]},sc=score(tx,o[3]);const x={tx,...tx,...sc,linked:[o[0],o[1]]};if(sc.action==='HOLD'||sc.action==='BLOCK'){let c=cases.find(c=>c.status==='open'&&c.accounts.some(a=>a===o[0]||a===o[1]));if(c){c.accounts=[...new Set([...c.accounts,o[0],o[1]])];c.txns.push([o[0],o[1],o[2],sc.action,sc.risk]);c.alerts_merged++;c.risk=Math.max(c.risk,sc.risk);c.findings=[...new Set([...c.findings,...sc.findings])].slice(0,6);c.reasons=sc.reasons}else{c={id:++caseId,status:'open',risk:sc.risk,action:sc.action,accounts:[o[0],o[1]],txns:[[o[0],o[1],o[2],sc.action,sc.risk]],reasons:sc.reasons,findings:sc.findings,alerts_merged:1};cases.push(c)}x.case_id=c.id}return x});
+    return{scenario:name,label:lab,results:res}}
+  return{shield,scenario,cases:()=>cases.slice().sort((a,b)=>b.risk-a.risk),resolve(id,fraud){const c=cases.find(c=>c.id===id);if(c)c.status=fraud?'confirmed_fraud':'false_alarm';return{id,status:c&&c.status}},
+    privacy:()=>({counters:C,stored:mem.slice(-6).reverse().map((m,i)=>({id:i,typology:m.typ,hits:m.hits,redacted:m.red,domains:[]}))}),
+    report:(m)=>{mem.push({tk:canon(m),hits:1,typ:'user_reported',red:redact(m)});C.stored_spam++;return{stored:true}},
+    stream:()=>{const r=Math.random(),act=r<.9?'ALLOW':r<.95?'VERIFY':'BLOCK';return{items:[{s:id(),r:id(),amt:Math.round(300+Math.random()*9000),city:['Mumbai','Delhi','Pune'][Math.floor(Math.random()*3)],risk:act==='ALLOW'?+(Math.random()*.25).toFixed(2):act==='VERIFY'?.45:.93,action:act,truth:act==='BLOCK'?1:0}],next:0,total:0}}}
+})();
+
+/* ---------------------------------- UI ---------------------------------- */
+const stat={stop:0,pass:0};
+function hud(){ $('hStop').textContent=stat.stop; $('hPass').textContent=stat.pass }
+function tally(a){ if(a==='BLOCK'||a==='HOLD')stat.stop++; else stat.pass++; hud() }
+const SAMPLES=[
+ ['Bank KYC phish','Dear customer your SBI account will be blocked today. Update KYC immediately at http://sbi-kyc-update.xyz/login and share OTP'],
+ ['Lottery fee','Congratulations! You have won Rs 25,00,000 in the lucky draw. Pay Rs 4999 processing fee to claim your prize'],
+ ['Remote-access scam','URGENT: install AnyDesk and share the code so our support team can refund your payment'],
+ ['Novel (no old keywords)','Sir your SIM will be disconnected in 2 hours as per TRAI. Press 9 or call 8800123456 now to avoid police action'],
+ ['Hidden payload','Download your invoice: http://files-secure.click/Invoice_2024.pdf.exe  ‮ and c​laim refund'],
+ ['UPI collect trap','Your Google Pay reward Rs 5000 is waiting! To receive money enter your UPI PIN in the collect request. Expires today.'],
+ ['Normal chat','Hey are we still on for dinner at 8 tomorrow?'],
+ ['Legit OTP','Your OTP for HDFC transaction is 482913. Do not share this with anyone. Never share OTP.']];
+SAMPLES.forEach(([n,t])=>{const c=document.createElement('span');c.className='chip';c.textContent=n;c.onclick=()=>{$('msg').value=t;analyze()};$('samples').appendChild(c)});
+const SCN=[['normal','Normal payment','known payee, usual device',0],['salary','Big salary (decoy)','must stay allowed',0],['traveller','Traveller (decoy)','new city, genuine',0],['structuring','Structuring','8 × just under ₹10,000',1],['circular','Circular laundering','A→B→C→D→A',1],['ring','Mule ring','9 accounts, 2 devices → hub',1],['takeover','Account takeover','new device + city + huge',1],['passthrough','Pass-through mule','in → out in 4 min',1]];
+SCN.forEach(([k,n,s,bad])=>{const b=document.createElement('button');b.className=bad?'bad':'';b.innerHTML=esc(n)+'<small>'+esc(s)+'</small>';b.onclick=()=>runScn(k);$('scn').appendChild(b)});
+
+async function analyze(){
+  const text=$('msg').value.trim();if(!text)return;
+  let r;try{r=LIVE?await call('/api/message',{text}):Demo.shield(text)}catch(e){r=Demo.shield(text)}
+  const col=r.verdict==='SPAM'?'#ff3d5a':r.verdict==='SUSPICIOUS'?'#ffc24a':'#3dff9a';
+  $('mres').style.display='block';$('score').textContent=r.score;$('arc').style.stroke=col;$('arc').style.strokeDashoffset=195-195*r.score/100;
+  $('verdict').textContent=r.verdict==='SPAM'?'SPAM — blocked':r.verdict==='SUSPICIOUS'?'Suspicious — warn user':'Safe — delivered';$('verdict').style.color=col;
+  $('vsub').textContent=r.latency_ms+' ms · '+(r.families||[]).join(' + ');$('lat').textContent=r.latency_ms+' ms';
+  $('sigs').innerHTML=r.signals.map(s=>'<li><em class="'+esc(s.family)+'">'+esc(s.family)+' '+(s.points>0?'+':'')+s.points+'</em><span>'+esc(s.text)+'</span></li>').join('')||'<li><span class="sub">No scam structure found.</span></li>';
+  $('urls').innerHTML=(r.urls&&r.urls.length)?'<div class="sub" style="margin-top:8px">URL forensics</div>'+r.urls.map(u=>'<div class="sub" style="color:'+(u.score>=40?'#ff8a3d':'#8aa0bd')+'">'+esc(u.host||u.url)+' — risk '+u.score+'</div>').join(''):'';
+  $('privline').className='priv'+(r.stored_in_memory?' sp2':'');$('privline').textContent='🔒 '+r.privacy+(r.memory?' · matched known spam (seen '+r.memory.seen+'×)':'');
+  const o=r.action==='BLOCK'?'BLOCK':r.action==='WARN'?'HOLD':'ALLOW';viz.packet(o);tally(o);refreshPrivacy();
+}
+async function report(){const t=$('msg').value.trim();if(!t)return;try{LIVE?await call('/api/message/report',{text:t}):Demo.report(t)}catch(e){Demo.report(t)}refreshPrivacy()}
+async function refreshPrivacy(){
+  let p;try{p=LIVE?await call('/api/privacy'):Demo.privacy()}catch(e){p=Demo.privacy()}
+  $('kP').textContent=p.counters.processed;$('kD').textContent=p.counters.discarded_normal;$('kS').textContent=p.counters.stored_spam;
+  $('mem').innerHTML=p.stored.length?p.stored.map(s=>'<div>#'+s.id+' · '+esc(s.typology)+' · hits '+s.hits+'<br>'+esc(s.redacted)+'</div>').join(''):'<span>No spam fingerprints stored yet. Normal messages never are.</span>'}
+function decision(r){
+  $('decact').className='act '+r.action;$('decact').textContent=r.action;$('decint').textContent=r.intervention;$('decrisk').textContent=r.risk.toFixed(2);
+  $('needle').style.left=clamp(r.risk*100,1,99)+'%';$('decsub').textContent=r.s+' → '+r.r+' · ₹'+Math.round(r.amt).toLocaleString('en-IN')+' · '+r.latency_ms+' ms';
+  const sg=r.signals||{};$('sgM').style.width=(sg.model*100)+'%';$('sgA').style.width=(sg.anomaly*100)+'%';$('sgG').style.width=(sg.graph*100)+'%';
+  $('reasons').innerHTML=(r.reasons||[]).map(x=>'<div><b>+'+x.points+'</b><span>'+esc(x.text)+'</span></div>').join('')||'<div><b style="color:#3dff9a">✓</b><span>No risk signals — approved silently, zero friction.</span></div>'}
+function feed(r,tag){const d=document.createElement('div');d.innerHTML='<span class="act '+r.action+'">'+r.action+'</span><span>'+esc(r.s)+' → '+esc(r.r)+' ₹'+Math.round(r.amt).toLocaleString('en-IN')+(tag?' · '+esc(tag):'')+'</span><b>'+r.risk.toFixed(2)+'</b>';$('feed').prepend(d);while($('feed').children.length>40)$('feed').lastChild.remove()}
+let busy=false;
+async function runScn(name){
+  if(busy)return;busy=true;let r;
+  try{r=LIVE?await call('/api/scenario',{name}):Demo.scenario(name)}catch(e){r=Demo.scenario(name)}
+  if(!r){busy=false;return}
+  $('decsub').textContent=r.label;
+  const nodes=new Set(),edges=[];
+  for(const x of r.results){viz.packet(x.action);tally(x.action);decision(x);feed(x,name);nodes.add(x.s);nodes.add(x.r);edges.push([x.s,x.r]);
+    if(x.action==='HOLD'||x.action==='BLOCK'){$('hClu').textContent='linked accounts: '+nodes.size}
+    await new Promise(z=>setTimeout(z,r.results.length>4?230:520))}
+  if(r.results.some(x=>x.action==='BLOCK'||x.action==='HOLD')&&nodes.size>2)viz.cluster([...nodes],edges);
+  refreshCases();busy=false}
+async function refreshCases(){
+  let cs;try{cs=LIVE?await call('/api/cases'):Demo.cases()}catch(e){cs=Demo.cases()}
+  const open=cs.filter(c=>c.status==='open');
+  $('cases').innerHTML=open.length?open.slice(0,6).map(c=>'<div class="case"><div class="row"><b>CASE #'+c.id+'</b><span class="act '+c.action+'">'+c.action+'</span><span class="sp"></span><span class="sub">risk '+c.risk.toFixed(2)+'</span></div><p>'+c.alerts_merged+' alert'+(c.alerts_merged>1?'s':'')+' merged · '+c.accounts.length+' accounts'+(c.findings&&c.findings[0]?' · '+esc(c.findings[c.findings.length-1]):'')+'</p><div class="row"><button class="btn sm" data-id="'+c.id+'" data-f="1">Confirm fraud</button><button class="btn sm" data-id="'+c.id+'" data-f="0">False alarm</button></div></div>').join(''):'<span class="sub">No open cases.</span>';
+  $('cases').querySelectorAll('button').forEach(b=>b.onclick=async()=>{const id=+b.dataset.id,f=b.dataset.f==='1';try{LIVE?await call('/api/cases/'+id+'/resolve',{fraud:f}):Demo.resolve(id,f)}catch(e){}refreshCases()})}
+$('bRetrain').onclick=async()=>{const b=$('bRetrain');b.textContent='Retraining…';try{if(LIVE){const r=await call('/api/retrain',{});b.textContent='Done · '+r.retrained_with_feedback_rows+' labels'}else b.textContent='Demo: needs backend'}catch(e){b.textContent='Failed'}setTimeout(()=>b.textContent='Retrain',2600)};
+let feedOn=false,feedIdx=0,feedT=null;
+$('bFeed').onclick=()=>{feedOn=!feedOn;$('bFeed').textContent=feedOn?'⏸ Pause':'▶ Play';clearInterval(feedT);if(feedOn)feedT=setInterval(async()=>{try{const s=LIVE?await call('/api/stream?from='+feedIdx+'&n=1'):Demo.stream();feedIdx=s.next;const x=s.items[0];if(!x)return;viz.packet(x.action);tally(x.action);feed(x,x.truth?'⚠ fraud':'');if(x.action!=='ALLOW')decision({...x,signals:{model:0,anomaly:0,graph:0},reasons:[],intervention:x.action,latency_ms:0})}catch(e){}},1100)};
+/* metrics + proof */
+const pc=x=>(x*100).toFixed(1)+'%';
+function strip(M){const t=M.test;$('mP').textContent=pc(t.precision);$('mR').textContent=pc(t.recall);$('mF').textContent=(t.fpr*100).toFixed(2)+'%';$('mL').textContent=M.latency_ms.p95;$('mU').textContent=pc(t.friction_on_legit.allowed_untouched);$('mD').textContent=pc(t.decoy_pass_rate)}
+function row(n,m,auc){return '<tr><td>'+esc(n)+'</td><td>'+m.precision+'</td><td>'+m.recall+'</td><td>'+(m.fpr!=null?m.fpr:'')+'</td><td>'+m.f1+'</td>'+(auc?'<td>'+(m.pr_auc!=null?m.pr_auc:'')+'</td>':'')+'</tr>'}
+function proof(M,demo){
+  const t=M.test,ab=M.ablation;let h='';
+  if(demo)h+='<p class="note badc">Demo mode: these are the numbers from a reference run of server.py (not computed in your browser). Start the backend to recompute them live.</p>';
+  h+='<h3>Test-period results (unseen last 20% of time, tuned on validation only)</h3><table><tr><th></th><th>precision</th><th>recall</th><th>FPR</th><th>F1</th><th>PR-AUC</th></tr>'+row('ShieldNet (fused, guarded)',t,1)+row('Rule: amount > ₹50,000',M.baseline_rule_amount_gt_50k,1)+row('3-rule engine (amount / velocity / device)',M.baseline_3_rule_engine,1)+'</table>';
+  h+='<p class="note">'+M.data.transactions+' synthetic transactions, '+(M.data.fraud_rate*100).toFixed(1)+'% fraud, '+M.data.decoys+' legitimate-but-unusual decoys. Splits are chronological: '+M.data.split.train+' / '+M.data.split.validation+' / '+M.data.split.test+'. Friction on legitimate customers: '+pc(t.friction_on_legit.verify)+' asked to verify, '+pc(t.friction_on_legit.hold_block)+' held/blocked, '+pc(t.friction_on_legit.allowed_untouched)+' never noticed the shield. Decoys allowed: '+pc(t.decoy_pass_rate)+'.</p>';
+  h+='<h3>Ablation — what each signal adds (fusion weights are learned, not hand-picked)</h3><table><tr><th></th><th>precision</th><th>recall</th><th>FPR</th><th>F1</th><th>PR-AUC</th></tr>'+Object.keys(ab).map(k=>row(k,ab[k],1)).join('')+'</table><p class="note">Learned stacking weights (logit space): '+Object.entries(M.fusion_weights_learned).map(e=>e[0]+' '+e[1]).join(' · ')+'. Thresholds tuned on validation by cost: verify ≥ '+M.thresholds.verify_from+', hold ≥ '+M.thresholds.hold_from+', block ≥ '+M.thresholds.block_from+' (raw fused scale).</p>';
+  h+='<h3>Recall by fraud pattern — obvious vs subtle</h3><table><tr><th>pattern</th><th>recall</th><th>n</th></tr>'+Object.entries(M.per_pattern_recall).map(([k,v])=>'<tr><td>'+esc(k)+'</td><td class="'+(v.recall<.8?'badc':'good')+'">'+v.recall+'</td><td>'+v.n+'</td></tr>').join('')+'</table>';
+  h+='<h3>Generalisation to unseen fraud</h3><p class="note">'+esc(M.held_out_pattern.pattern)+': recall <b>'+M.held_out_pattern.recall+'</b> on '+M.held_out_pattern.test_cases+' test cases. '+esc(M.held_out_pattern.note)+'.</p>';
+  h+='<h3>Latency (per transaction, end-to-end, no SHAP)</h3><p class="note">p50 '+M.latency_ms.p50+' ms · p95 '+M.latency_ms.p95+' ms · p99 '+M.latency_ms.p99+' ms. p95 by component: '+Object.entries(M.latency_ms.p95_by_component).map(e=>e[0]+' '+e[1]).join(' · ')+' ms.</p>';
+  h+='<h3>Adaptive learning (analyst feedback)</h3><table><tr><th></th><th>precision</th><th>recall</th><th>FPR</th><th>F1</th></tr>'+row('before feedback',M.adaptive.before)+row('after '+M.adaptive.feedback_rows+' analyst labels',M.adaptive.after)+'</table><p class="note">'+esc(M.adaptive.honest_note)+'</p>';
+  h+='<h3>Message shield self-test (tiny hand-written sets — indicative only)</h3><table><tr><th></th><th>n</th><th>precision</th><th>recall</th><th>FPR</th></tr>'+['dev','held_out'].map(k=>'<tr><td>'+k+'</td><td>'+M.messages[k].n+'</td><td>'+M.messages[k].precision+'</td><td>'+M.messages[k].recall+'</td><td>'+M.messages[k].false_positive_rate+'</td></tr>').join('')+'</table><p class="note">Held-out misses are reported, not patched: '+esc(M.messages.held_out.misses.join(' | ')||'none')+'.</p>';
+  h+='<p class="note">Limits: synthetic data (real bank traffic is messier), simulated OTP step-up, and the supervised layer is a transparent logistic model with interaction features — swap in LightGBM/XGBoost behind the same interface for production.</p>';
+  $('proof').innerHTML=h}
+let METRICS=null,DEMOM=false;
+$('bMetrics').onclick=()=>{if(METRICS)proof(METRICS,DEMOM);$('drawer').classList.add('on')};$('bClose').onclick=()=>$('drawer').classList.remove('on');
+$('bCfg').onclick=()=>{$('apiIn').value=API;$('cfg').showModal()};$('apiCancel').onclick=()=>$('cfg').close();$('apiSave').onclick=()=>{try{localStorage.setItem('shieldnet_api',$('apiIn').value.trim())}catch(e){}location.href=location.pathname};
+$('bAnalyze').onclick=analyze;$('bReport').onclick=report;$('msg').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')analyze()});
+
+/* ---------------------------------- boot ---------------------------------- */
+async function boot(){
+  if(API){try{const h=await call('/api/health');LIVE=!!h.ok}catch(e){LIVE=false}}
+  const m=$('mode');
+  if(!LIVE){m.className='pill demo';m.innerHTML='<b>●</b> DEMO ENGINE · in-browser';DEMOM=true;METRICS=SNAPSHOT;if(SNAPSHOT)strip(SNAPSHOT);$('feedsub').textContent='simulated stream';refreshPrivacy();refreshCases();return}
+  m.innerHTML='<b>●</b> LIVE ENGINE · '+(API||location.host);
+  const wait=async()=>{let h;try{h=await call('/api/health')}catch(e){setTimeout(wait,2000);return}
+    if(!h.ready){m.innerHTML='<b>●</b> LIVE · engine training: '+esc(h.phase);setTimeout(wait,1500);return}
+    m.innerHTML='<b>●</b> LIVE ENGINE · '+(API||location.host);METRICS=await call('/api/metrics');strip(METRICS);refreshPrivacy();refreshCases()};
+  wait();refreshPrivacy()}
+boot();
+setInterval(()=>{if(LIVE)refreshPrivacy()},15000);
+</script>
+</body>
+</html>
