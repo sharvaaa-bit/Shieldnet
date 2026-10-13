@@ -62,10 +62,33 @@ Tip: free hosts sleep when idle, so open the URL a minute before you present.
   self-test are in the **Proof & metrics** drawer of the UI (and in `python server.py --eval`).
 - Guards: labels/pattern/decoy can never be features (asserted at import); a test proves features use past data only.
 
+## Prove it yourself
+
+```bash
+python server.py --selftest   # 19 checks: no future leakage, normal messages leave NOTHING stored, phishing blocked with only a
+                              # masked fingerprint kept, reworded spam recognised, every scenario behaves, API round-trips
+python server.py --eval       # full metrics report (JSON)
+```
+
+## How a bank, app or operator plugs it in
+
+ShieldNet is a decision service placed in front of the rail. The bank/app server makes one call before approving a payment,
+the operator/gateway makes one call before delivering a message. Allow = pass it on, Block/Hold = stop it.
+
+```
+POST /api/score    {"s":"payer","r":"payee","amt":4999,"dev":"device_id","city":"Pune"}  ->  {"action":"ALLOW|VERIFY|HOLD|BLOCK","risk":0.93,"reasons":[...]}
+POST /api/message  {"text":"incoming SMS / chat / email"}                                ->  {"action":"ALLOW|WARN|BLOCK","score":87,"signals":[...]}
+```
+
+## What a complete solution also needs (beyond this prototype)
+Real integration with banks, UPI apps and operators · training/testing on approved real data · shared fraud signals between banks ·
+a human fraud team with fast freeze/recovery · customer warnings and education · legal basis, audit trail and security ·
+monitoring for drift and regular retraining.
+
 ## Honest limits
 - Data is synthetic and self-generated, so absolute numbers flatter reality; the baselines and ablations are the meaningful part.
 - Supervised layer is a transparent logistic model + interactions (so SHAP is exact); swap LightGBM/XGBoost in behind `fit_bundle`.
-- Message self-test sets are tiny hand-written lists (33 dev, 24 held-out); held-out recall is 0.83 and its two misses are shown, not patched.
+- Message self-test sets are small hand-written lists: dev (33), held-out (24, recall 0.83) and a third set written after the rules were frozen (28: precision 1.0, recall 0.86, 0 false positives). All misses are shown, not patched (e.g. a romance-scam opener and a "send money, I'm in an accident" family-emergency text).
 - OTP step-up is simulated; the message shield cannot read encrypted end-to-end chats, only what a gateway/app hands it.
 - Adaptive learning on this data shows little before/after change; it is real but small.
 
