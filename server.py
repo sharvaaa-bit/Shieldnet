@@ -1094,10 +1094,14 @@ def _fl(q, k, d):
 _orig_get, _orig_post, _orig_end = H.do_GET, H.do_POST, H.end_headers
 
 
+def _ip(self):  # behind a proxy (Render) the real client is the first X-Forwarded-For entry
+    return (self.headers.get("X-Forwarded-For") or self.client_address[0]).split(",")[0].strip()[:64]
+
+
 def _v3_get(self):
     t0 = perf_counter(); p = urllib.parse.urlparse(self.path).path
     try:
-        if not TELEM.allow(self.client_address[0]): return self._send(429, dict(error="rate limit exceeded", retry_after_s=int(Telemetry.WINDOW)))
+        if not TELEM.allow(_ip(self)): return self._send(429, dict(error="rate limit exceeded", retry_after_s=int(Telemetry.WINDOW)))
         if p == "/api/telemetry": return self._send(200, TELEM.report())
         if p == "/api/whatif":
             if not ENG.ready: return self._send(503, dict(ready=False, phase=ENG.phase))
@@ -1111,7 +1115,7 @@ def _v3_get(self):
 def _v3_post(self):
     t0 = perf_counter(); p = urllib.parse.urlparse(self.path).path
     try:
-        if not TELEM.allow(self.client_address[0]): return self._send(429, dict(error="rate limit exceeded", retry_after_s=int(Telemetry.WINDOW)))
+        if not TELEM.allow(_ip(self)): return self._send(429, dict(error="rate limit exceeded", retry_after_s=int(Telemetry.WINDOW)))
         if p == "/api/batch":
             texts = (self.body().get("texts") or [])[:50]; out = []; cnt = defaultdict(int)
             for t in texts:
